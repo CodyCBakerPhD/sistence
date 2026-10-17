@@ -1,0 +1,9 @@
+{
+    "organizations": [],
+    "repositories": [
+        "catalystneuro/neuroconv",
+        "catalystneuro/roiextractors",
+        "SpikeInterface/spikeinterface"
+    ],
+    "include_forks": false
+}
