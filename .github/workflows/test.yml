@@ -1,0 +1,192 @@
+name: Tests
+
+on:
+    workflow_call:
+    workflow_dispatch:
+    pull_request:
+
+jobs:
+    lint:
+        name: Lint and type-check
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v7
+              with:
+                  node-version: lts/*
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Type-check
+              run: npm run typecheck
+
+            - name: Check formatting
+              run: npm run format:check
+
+    unit-tests:
+        name: Unit tests (Vitest)
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v7
+              with:
+                  node-version: lts/*
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run unit tests with coverage
+              run: npm run test:coverage
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v7
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./coverage/lcov.info
+                  flags: unit
+                  fail_ci_if_error: false
+                  verbose: true
+
+    visual-tests:
+        name: Visual tests (Playwright screenshots)
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v7
+              with:
+                  node-version: lts/*
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Playwright browsers
+              run: npx playwright install chromium --with-deps
+
+            - name: Run visual tests
+              run: npm run test:visual
+
+            # The report holds the expected, actual and diff images of any
+            # comparison that failed, which is what a baseline is regenerated
+            # from when a change to the page is meant rather than a regression
+            # (or label the pull request `update-visual-baselines`).
+            - name: Upload report
+              if: failure()
+              uses: actions/upload-artifact@v7
+              with:
+                  name: playwright-report-visual
+                  path: |
+                      playwright-report-visual/
+                      test-results/
+                  retention-days: 7
+
+    integration-tests:
+        name: Integration tests (Playwright)
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v7
+              with:
+                  node-version: lts/*
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Playwright browsers
+              run: npx playwright install chromium --with-deps
+
+            - name: Run integration tests with coverage
+              run: npm run test:e2e:coverage
+
+            - name: Build integration coverage report
+              run: npm run coverage:integration
+
+            - name: Upload integration coverage to Codecov
+              uses: codecov/codecov-action@v7
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./coverage/integration/lcov.info
+                  flags: integration
+                  fail_ci_if_error: false
+                  verbose: true
+
+    scanner-tests:
+        name: Scanner tests (Python ${{ matrix.python-version }})
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version: ["3.11", "3.13"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Set up Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: ${{ matrix.python-version }}
+
+            - name: Install
+              run: python -m pip install --upgrade pip && pip install -e "scanner[dev,schema]"
+
+            - name: Ruff (lint)
+              working-directory: scanner
+              run: ruff check .
+
+            - name: Ruff (format)
+              working-directory: scanner
+              run: ruff format --check .
+
+            - name: Mypy
+              working-directory: scanner
+              run: mypy
+
+            - name: The LinkML schema is valid LinkML
+              run: linkml-validate schema/config.yaml
+
+            - name: Pytest
+              working-directory: scanner
+              run: pytest -q --cov=sistence_scanner --cov-report=xml
+
+            # The fixtures of the page's tests come from the scanner's own record code;
+            # a change to the record shape has to regenerate them.
+            - name: Page fixtures are current
+              run: |
+                  python tests/fixtures/generate_mock_data.py
+                  git diff --exit-code -- tests/fixtures/mock-data.js
+
+            - name: Upload coverage to Codecov
+              if: matrix.python-version == '3.13'
+              uses: codecov/codecov-action@v7
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./scanner/coverage.xml
+                  flags: scanner
+                  fail_ci_if_error: false
+                  verbose: true

@@ -1,0 +1,61 @@
+id: https://github.com/CodyCBakerPhD/sistence/schema/config
+name: sistence-config
+title: sistence scan configuration
+description: >-
+  The record kept in `config.json` on the `config` branch. It names the GitHub repositories that the scan workflow
+  runs con/sistent over: every public repository of each organization, plus each repository listed by its full
+  `owner/name`.
+license: BSD-3-Clause
+version: 1.0.0
+prefixes:
+  linkml: https://w3id.org/linkml/
+  sistence: https://github.com/CodyCBakerPhD/sistence/schema/config/
+default_prefix: sistence
+default_range: string
+imports:
+  - linkml:types
+
+classes:
+  Config:
+    tree_root: true
+    description: Which repositories to scan, and which of them the others are compared against.
+    slots:
+      - organizations
+      - repositories
+      - main
+      - include_forks
+      - include_archived
+
+slots:
+  organizations:
+    description: >-
+      GitHub organizations (or users) whose public repositories are all scanned. Forks and archived repositories are
+      left out unless `include_forks` or `include_archived` is set.
+    range: string
+    multivalued: true
+    required: true
+    pattern: "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$"
+  repositories:
+    description: >-
+      Individual repositories to scan, each written as `owner/name` so that it is never ambiguous which one is
+      meant. A repository listed here is scanned even when it is a fork or archived. Unless `main` says otherwise,
+      the first entry is the one every other repository is compared against, so there has to be at least one.
+    range: string
+    multivalued: true
+    required: true
+    minimum_cardinality: 1
+    pattern: "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?/[A-Za-z0-9._-]+$"
+  main:
+    description: >-
+      The repository (`owner/name`) every other one is compared against: con/sistent's source of truth. It is
+      scanned whether or not it is listed anywhere else. Defaults to the first entry of `repositories`.
+    range: string
+    pattern: "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?/[A-Za-z0-9._-]+$"
+  include_forks:
+    description: Also scan the forks an organization owns. They are skipped by default.
+    range: boolean
+    ifabsent: "false"
+  include_archived:
+    description: Also scan the archived repositories of an organization. They are skipped by default.
+    range: boolean
+    ifabsent: "false"

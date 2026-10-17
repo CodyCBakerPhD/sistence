@@ -1,0 +1,62 @@
+name: Update visual baselines
+
+# Regenerates the screenshot baselines of `npm run test:visual` on the same
+# Linux runner image the Tests workflow compares them on, and commits them to
+# the pull request's branch.  Add the `update-visual-baselines` label to a
+# pull request (from a branch of this repository) once a change to the page's
+# look is intended; the label is removed again when the job is done.
+#
+# A commit pushed with the workflow's token starts no new workflow runs, so
+# the Tests workflow re-runs on the next push to the branch.
+
+on:
+    pull_request:
+        types:
+            - labeled
+
+jobs:
+    update:
+        if: github.event.label.name == 'update-visual-baselines' && github.event.pull_request.head.repo.full_name == github.repository
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.ref }}
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v7
+              with:
+                  node-version: lts/*
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Playwright browsers
+              run: npx playwright install chromium --with-deps
+
+            - name: Regenerate the baselines
+              run: npm run test:visual -- --update-snapshots
+
+            - name: Commit them
+              run: |
+                  git add tests/visual
+                  if git diff --cached --quiet; then
+                      echo "The baselines are already current."
+                  else
+                      git config user.name "github-actions[bot]"
+                      git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                      git commit --quiet -m "test: update visual baselines"
+                      git push origin HEAD
+                  fi
+
+            - name: Remove the label
+              if: always()
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: gh api --method DELETE "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/update-visual-baselines" || true

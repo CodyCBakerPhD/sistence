@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <title>sistence · Consistency over time</title>
+
+        <link rel="icon" href="./assets/sistence-logo.svg" type="image/svg+xml" />
+
+        <!-- Anti-FOUC: apply the saved theme (else the OS preference) and suppress
+         transitions before the stylesheet is parsed, so the first paint already
+         uses the right colors.
+         NOTE: the defaulting logic must stay in sync with resolve_theme() in theme.ts. -->
+        <script>
+            try {
+                const saved = localStorage.getItem("theme");
+                const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+                const theme = saved === "light" || saved === "dark" ? saved : prefersLight ? "light" : "dark";
+                document.documentElement.setAttribute("data-theme", theme);
+            } catch {}
+            document.documentElement.classList.add("preload");
+        </script>
+
+        <link rel="stylesheet" href="./styles.css" />
+
+        <script type="module" src="./main.ts"></script>
+    </head>
+    <body>
+        <header class="site-header">
+            <a href="https://github.com/CodyCBakerPhD/sistent" class="site-brand" target="_blank" rel="noopener">
+                <img src="./assets/sistence-logo.svg" alt="" class="site-logo" />
+                sistence
+            </a>
+            <span class="site-title">Consistency over time</span>
+            <div class="site-header-spacer"></div>
+            <button
+                id="theme_toggle_btn"
+                class="theme-toggle-btn"
+                aria-label="Switch to light mode"
+                title="Switch to light mode"
+            ></button>
+            <a
+                href="https://github.com/CodyCBakerPhD/sistence/tree/config"
+                id="config_link"
+                class="site-icon-link"
+                target="_blank"
+                rel="noopener"
+                aria-label="Scanned repositories (config branch)"
+                title="Scanned repositories (config branch)"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
+            </a>
+            <a
+                href="https://github.com/CodyCBakerPhD/sistence/tree/data"
+                id="data_link"
+                class="site-icon-link"
+                target="_blank"
+                rel="noopener"
+                aria-label="Report data (data branch)"
+                title="Report data (data branch)"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <ellipse cx="12" cy="5" rx="8" ry="3" />
+                    <path d="M20 12c0 1.66-3.58 3-8 3s-8-1.34-8-3" />
+                    <path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5" />
+                </svg>
+            </a>
+            <a
+                href="https://github.com/CodyCBakerPhD/sistence"
+                class="site-icon-link site-github-link"
+                target="_blank"
+                rel="noopener"
+                aria-label="Source code on GitHub"
+                title="Source code on GitHub"
+            >
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path
+                        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+                    />
+                </svg>
+            </a>
+        </header>
+
+        <main class="page-content">
+            <div id="status_banner" class="status-banner" role="status" hidden></div>
+
+            <!-- One row of filters above everything they scope. -->
+            <div class="ControllerContainer" id="controls">
+                <div class="SubControllerContainer">
+                    <label for="run_selector">Run</label>
+                    <select id="run_selector" disabled></select>
+                </div>
+                <div class="SubControllerContainer">
+                    <label for="check_selector">Check</label>
+                    <select id="check_selector" disabled>
+                        <option value="all">All checks</option>
+                    </select>
+                </div>
+                <div class="controls-spacer"></div>
+                <a id="run_link" class="run-link" href="#" target="_blank" rel="noopener" hidden>Workflow run</a>
+            </div>
+            <p id="run_caption" class="run-caption"></p>
+
+            <div id="kpis" class="kpi-row" aria-live="polite"></div>
+
+            <section class="dashboard-section" id="over_time" aria-labelledby="over_time_heading">
+                <div class="section-header">
+                    <h2 id="over_time_heading">
+                        <a href="#over_time" class="section-anchor" aria-label="Link to this section">#</a>Consistency
+                        over time
+                    </h2>
+                    <div class="section-controls">
+                        <div class="radio-toggle" role="radiogroup" aria-label="Over-time view">
+                            <input type="radio" id="over_time_view_plot" name="over_time_view" value="plot" checked />
+                            <label for="over_time_view_plot">Plot</label>
+                            <input type="radio" id="over_time_view_table" name="over_time_view" value="table" />
+                            <label for="over_time_view_table">Table</label>
+                        </div>
+                        <div class="radio-toggle" role="radiogroup" aria-label="Over-time scale">
+                            <input
+                                type="radio"
+                                id="over_time_scale_count"
+                                name="over_time_scale"
+                                value="count"
+                                checked
+                            />
+                            <label for="over_time_scale_count">Count</label>
+                            <input type="radio" id="over_time_scale_percent" name="over_time_scale" value="percent" />
+                            <label for="over_time_scale_percent">Percent</label>
+                        </div>
+                    </div>
+                </div>
+                <p class="section-note" id="over_time_note"></p>
+                <div class="view-section">
+                    <div id="over_time_plot" class="plot"></div>
+                    <div id="over_time_table" class="plot-table" hidden></div>
+                </div>
+            </section>
+
+            <section class="dashboard-section" id="checks" aria-labelledby="checks_heading">
+                <div class="section-header">
+                    <h2 id="checks_heading">
+                        <a href="#checks" class="section-anchor" aria-label="Link to this section">#</a>Checks in this
+                        run
+                    </h2>
+                    <div class="section-controls">
+                        <div class="radio-toggle" role="radiogroup" aria-label="Checks view">
+                            <input type="radio" id="checks_view_plot" name="checks_view" value="plot" checked />
+                            <label for="checks_view_plot">Plot</label>
+                            <input type="radio" id="checks_view_table" name="checks_view" value="table" />
+                            <label for="checks_view_table">Table</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="view-section">
+                    <div id="checks_plot" class="plot"></div>
+                    <div id="checks_table" class="plot-table" hidden></div>
+                </div>
+            </section>
+
+            <section class="dashboard-section" id="repositories" aria-labelledby="repositories_heading">
+                <div class="section-header">
+                    <h2 id="repositories_heading">
+                        <a href="#repositories" class="section-anchor" aria-label="Link to this section">#</a
+                        >Repositories
+                    </h2>
+                    <div class="section-controls">
+                        <input
+                            type="search"
+                            id="repo_filter"
+                            placeholder="Filter repositories"
+                            aria-label="Filter repositories"
+                        />
+                        <div class="SubControllerContainer">
+                            <input type="checkbox" id="only_inconsistent" />
+                            <label for="only_inconsistent">Only inconsistent</label>
+                        </div>
+                        <div class="SubControllerContainer">
+                            <label for="repo_sort">Sort</label>
+                            <select id="repo_sort">
+                                <option value="findings">Most findings</option>
+                                <option value="name">Name</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <p class="section-note">
+                    Each cell is one check of one repository against main: select it to list its findings.
+                </p>
+                <div id="status_legend" class="status-legend"></div>
+                <div id="matrix" class="matrix-wrapper"></div>
+            </section>
+
+            <section class="dashboard-section" id="findings" aria-labelledby="findings_heading">
+                <div class="section-header">
+                    <h2 id="findings_heading">
+                        <a href="#findings" class="section-anchor" aria-label="Link to this section">#</a>Findings
+                    </h2>
+                    <div class="section-controls">
+                        <span id="findings_scope" class="scope-label"></span>
+                        <button id="findings_clear" class="text-btn" hidden>Show all repositories</button>
+                    </div>
+                </div>
+                <div id="findings_table" class="plot-table"></div>
+            </section>
+
+            <section class="dashboard-section" id="candidates" aria-labelledby="candidates_heading">
+                <div class="section-header">
+                    <h2 id="candidates_heading">
+                        <a href="#candidates" class="section-anchor" aria-label="Link to this section">#</a>Candidates
+                        for main
+                    </h2>
+                </div>
+                <p class="section-note">
+                    Things some repositories have that main lacks: improvements that may percolate back into main. They
+                    never count as inconsistencies.
+                </p>
+                <div id="candidates_table" class="plot-table"></div>
+            </section>
+        </main>
+
+        <footer class="site-footer">
+            <span class="site-version" id="site_version"></span>
+            <span
+                >Reports produced by
+                <a href="https://github.com/CodyCBakerPhD/sistent" target="_blank" rel="noopener">con/sistent</a></span
+            >
+        </footer>
+    </body>
+</html>

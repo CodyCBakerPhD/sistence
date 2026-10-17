@@ -1,0 +1,104 @@
+name: Validate config
+
+# Validates `config.json`, the only file on the `config` branch, against the
+# schema on `main` (schema/config.yaml, LinkML, and its JSON Schema export).
+#
+# - A pull request into `config` is validated by `pull_request_target`, which
+#   always runs this file as it is on the default branch: the `config` branch
+#   holds no workflows of its own, so `pull_request` would never run there.
+#   The proposed `config.json` is only ever read as data — nothing from the
+#   pull request is executed — and the job has a read-only token and no
+#   secrets, so this is safe for pull requests from forks too.
+# - A push to, or pull request into, `main` that touches the schema or the
+#   validator re-validates the current `config.json` against the new schema.
+# - It can also be run by hand, and runs weekly to catch direct pushes to
+#   `config` (which trigger nothing; protect the branch to require pull
+#   requests with this check).
+
+on:
+    pull_request_target:
+        branches:
+            - config
+    push:
+        branches:
+            - main
+        paths:
+            - "schema/**"
+            - "scanner/**"
+            - ".github/workflows/validate-config.yml"
+    pull_request:
+        branches:
+            - main
+        paths:
+            - "schema/**"
+            - "scanner/**"
+            - ".github/workflows/validate-config.yml"
+    schedule:
+        - cron: "0 7 * * 1"
+    workflow_dispatch:
+
+jobs:
+    validate:
+        name: Validate config.json
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            # The schema and validator: the default branch for a pull request
+            # into `config`, otherwise the commit being tested.
+            - name: Checkout schema
+              uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+
+            - name: Checkout the proposed config.json
+              if: github.event_name == 'pull_request_target'
+              uses: actions/checkout@v7
+              with:
+                  repository: ${{ github.event.pull_request.head.repo.full_name }}
+                  ref: ${{ github.event.pull_request.head.sha }}
+                  path: config-branch
+                  persist-credentials: false
+
+            - name: Checkout the config branch
+              if: github.event_name != 'pull_request_target'
+              uses: actions/checkout@v7
+              with:
+                  ref: config
+                  path: config-branch
+                  persist-credentials: false
+
+            - name: The branch holds config.json alone
+              working-directory: config-branch
+              run: |
+                  files=$(git ls-files)
+                  if [[ "$files" != "config.json" ]]; then
+                      echo "::error::The config branch must hold config.json and nothing else; found:"
+                      echo "$files"
+                      exit 1
+                  fi
+
+            - name: Set up Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: "3.12"
+
+            - name: Install
+              run: python -m pip install --upgrade pip && pip install -e "scanner[schema]"
+
+            - name: Validate against the LinkML schema
+              run: linkml-validate --schema schema/config.yaml --target-class Config config-branch/config.json
+
+            - name: Validate against the JSON Schema export, and check the formatting
+              run: sistence-scan validate config-branch/config.json --check-format
+
+            - name: Summary
+              if: success()
+              run: |
+                  {
+                      echo "### config.json is valid"
+                      echo
+                      echo '```json'
+                      cat config-branch/config.json
+                      echo '```'
+                  } >> "$GITHUB_STEP_SUMMARY"

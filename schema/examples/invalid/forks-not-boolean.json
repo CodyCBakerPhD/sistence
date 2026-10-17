@@ -1,0 +1,9 @@
+{
+    "organizations": [
+        "catalystneuro"
+    ],
+    "repositories": [
+        "catalystneuro/neuroconv"
+    ],
+    "include_forks": "yes"
+}
