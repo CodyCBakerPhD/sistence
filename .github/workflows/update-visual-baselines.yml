@@ -6,8 +6,9 @@ name: Update visual baselines
 # pull request (from a branch of this repository) once a change to the page's
 # look is intended; the label is removed again when the job is done.
 #
-# A commit pushed with the workflow's token starts no new workflow runs, so
-# the Tests workflow re-runs on the next push to the branch.
+# A commit pushed with the workflow's token starts no `pull_request` runs, so
+# the job dispatches the Tests workflow on the branch itself (which GitHub
+# allows once this workflow is on the default branch).
 
 on:
     pull_request:
@@ -19,6 +20,7 @@ jobs:
         if: github.event.label.name == 'update-visual-baselines' && github.event.pull_request.head.repo.full_name == github.repository
         runs-on: ubuntu-latest
         permissions:
+            actions: write
             contents: write
             pull-requests: write
         steps:
@@ -43,6 +45,7 @@ jobs:
               run: npm run test:visual -- --update-snapshots
 
             - name: Commit them
+              id: commit
               run: |
                   git add tests/visual
                   if git diff --cached --quiet; then
@@ -52,7 +55,17 @@ jobs:
                       git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
                       git commit --quiet -m "test: update visual baselines"
                       git push origin HEAD
+                      echo "pushed=true" >> "$GITHUB_OUTPUT"
                   fi
+
+            - name: Run the tests on the new commit
+              if: steps.commit.outputs.pushed == 'true'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  BRANCH: ${{ github.event.pull_request.head.ref }}
+              run: |
+                  gh workflow run test.yml --ref "$BRANCH" ||
+                      echo "::warning::Could not start the Tests workflow; it runs on the next push to $BRANCH."
 
             - name: Remove the label
               if: always()
