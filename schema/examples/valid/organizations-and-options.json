@@ -1,0 +1,12 @@
+{
+    "organizations": [
+        "catalystneuro",
+        "dandi"
+    ],
+    "repositories": [
+        "SpikeInterface/spikeinterface"
+    ],
+    "main": "catalystneuro/neuroconv",
+    "include_forks": true,
+    "include_archived": false
+}

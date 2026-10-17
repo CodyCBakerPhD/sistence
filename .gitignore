@@ -1,0 +1,28 @@
+# PyCharm
+.idea/*
+nohup.out
+
+# Node
+node_modules/
+dist/
+storybook-static/
+playwright-report/
+playwright-report-chromatic/
+playwright-report-visual/
+test-results/
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+scanner/coverage.xml
+scanner/.coverage
+
+# Local checkouts of the config and data branches (see README.md)
+config-branch/
+data-branch/

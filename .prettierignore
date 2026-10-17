@@ -1,0 +1,7 @@
+# Generated, or held to a format of their own (config instances are checked for an indent of 4 by the scanner)
+schema/
+scanner/
+tests/fixtures/mock-data.js
+tests/visual/*-snapshots/
+package-lock.json
+CHANGELOG.md

@@ -1,0 +1,92 @@
+name: Scan
+
+# Runs con/sistent over the repositories `config.json` (on the `config`
+# branch) names, and appends the result as one line to
+# `data/%Y/%m/%Y%m%d_report.json` on the `data` branch, rebuilding
+# `data/index.json` beside it.  The `data` branch is created on the first run.
+
+on:
+    workflow_dispatch:
+        inputs:
+            sistent:
+                description: "pip requirement to install con/sistent from"
+                required: true
+                default: "sistent @ git+https://github.com/CodyCBakerPhD/sistent@main"
+
+# One scan at a time, so that two runs never race to push to `data`.
+concurrency:
+    group: scan
+    cancel-in-progress: false
+
+jobs:
+    scan:
+        name: Scan repositories
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Checkout the config branch
+              uses: actions/checkout@v7
+              with:
+                  ref: config
+                  path: config-branch
+                  persist-credentials: false
+
+            - name: Set up Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: "3.12"
+
+            - name: Install
+              env:
+                  SISTENT: ${{ inputs.sistent }}
+              run: python -m pip install --upgrade pip && pip install -e scanner "$SISTENT"
+
+            - name: Validate config.json
+              run: sistence-scan validate config-branch/config.json
+
+            # A worktree of this checkout, so that pushing uses its credentials.
+            - name: Check out the data branch
+              run: |
+                  if git fetch --depth=1 origin +refs/heads/data:refs/remotes/origin/data; then
+                      git worktree add -B data data-branch origin/data
+                  else
+                      echo "No data branch yet; starting one."
+                      git worktree add --detach data-branch
+                      git -C data-branch checkout --orphan data
+                      git -C data-branch rm -r --quiet --force .
+                  fi
+
+            - name: Scan
+              env:
+                  GITHUB_TOKEN: ${{ github.token }}
+              run: >-
+                  sistence-scan scan config-branch/config.json
+                  --data-dir data-branch
+                  --work-dir "$RUNNER_TEMP/scan"
+                  --summary "$GITHUB_STEP_SUMMARY"
+
+            - name: Commit and push
+              working-directory: data-branch
+              env:
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add data
+                  git commit --quiet -m "Record a consistency scan" -m "$RUN_URL"
+                  git push origin HEAD:refs/heads/data
+
+            - name: Upload sistent's report
+              if: always()
+              uses: actions/upload-artifact@v7
+              with:
+                  name: sistent-report
+                  path: |
+                      ${{ runner.temp }}/scan/report.json
+                      ${{ runner.temp }}/scan/sistent.toml
+                  if-no-files-found: ignore
+                  retention-days: 14

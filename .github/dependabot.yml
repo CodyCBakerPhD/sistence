@@ -1,0 +1,34 @@
+version: 2
+updates:
+    - package-ecosystem: "npm"
+      directory: "/"
+      schedule:
+          interval: "quarterly"
+      rebase-strategy: "disabled"
+      reviewers:
+          - "CodyCBakerPhD"
+      assignees:
+          - "CodyCBakerPhD"
+      labels: []
+
+    - package-ecosystem: "pip"
+      directory: "/scanner"
+      schedule:
+          interval: "quarterly"
+      rebase-strategy: "disabled"
+      reviewers:
+          - "CodyCBakerPhD"
+      assignees:
+          - "CodyCBakerPhD"
+      labels: []
+
+    - package-ecosystem: "github-actions"
+      directory: "/"
+      schedule:
+          interval: "quarterly"
+      rebase-strategy: "disabled"
+      reviewers:
+          - "CodyCBakerPhD"
+      assignees:
+          - "CodyCBakerPhD"
+      labels: []

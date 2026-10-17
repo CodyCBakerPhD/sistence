@@ -1,0 +1,112 @@
+{
+    "$defs": {
+        "Config": {
+            "additionalProperties": false,
+            "description": "Which repositories to scan, and which of them the others are compared against.",
+            "properties": {
+                "include_archived": {
+                    "description": "Also scan the archived repositories of an organization. They are skipped by default.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "include_forks": {
+                    "description": "Also scan the forks an organization owns. They are skipped by default.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "main": {
+                    "description": "The repository (`owner/name`) every other one is compared against: con/sistent's source of truth. It is scanned whether or not it is listed anywhere else. Defaults to the first entry of `repositories`.",
+                    "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?/[A-Za-z0-9._-]+$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "organizations": {
+                    "description": "GitHub organizations (or users) whose public repositories are all scanned. Forks and archived repositories are left out unless `include_forks` or `include_archived` is set. An empty list and no list both mean none.",
+                    "items": {
+                        "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "repositories": {
+                    "description": "Individual repositories to scan, each written as `owner/name` so that it is never ambiguous which one is meant. A repository listed here is scanned even when it is a fork or archived. Unless `main` says otherwise, the first entry is the one every other repository is compared against, so there has to be at least one.",
+                    "items": {
+                        "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?/[A-Za-z0-9._-]+$",
+                        "type": "string"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                }
+            },
+            "required": [
+                "repositories"
+            ],
+            "title": "Config",
+            "type": "object"
+        }
+    },
+    "$id": "https://github.com/CodyCBakerPhD/sistence/schema/config",
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "additionalProperties": false,
+    "description": "Which repositories to scan, and which of them the others are compared against.",
+    "metamodel_version": "1.12.0",
+    "properties": {
+        "include_archived": {
+            "description": "Also scan the archived repositories of an organization. They are skipped by default.",
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "include_forks": {
+            "description": "Also scan the forks an organization owns. They are skipped by default.",
+            "type": [
+                "boolean",
+                "null"
+            ]
+        },
+        "main": {
+            "description": "The repository (`owner/name`) every other one is compared against: con/sistent's source of truth. It is scanned whether or not it is listed anywhere else. Defaults to the first entry of `repositories`.",
+            "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?/[A-Za-z0-9._-]+$",
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "organizations": {
+            "description": "GitHub organizations (or users) whose public repositories are all scanned. Forks and archived repositories are left out unless `include_forks` or `include_archived` is set. An empty list and no list both mean none.",
+            "items": {
+                "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
+                "type": "string"
+            },
+            "type": [
+                "array",
+                "null"
+            ]
+        },
+        "repositories": {
+            "description": "Individual repositories to scan, each written as `owner/name` so that it is never ambiguous which one is meant. A repository listed here is scanned even when it is a fork or archived. Unless `main` says otherwise, the first entry is the one every other repository is compared against, so there has to be at least one.",
+            "items": {
+                "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?/[A-Za-z0-9._-]+$",
+                "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+        }
+    },
+    "required": [
+        "repositories"
+    ],
+    "title": "sistence-config",
+    "type": "object",
+    "version": "1.0.0"
+}
