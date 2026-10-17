@@ -48,6 +48,13 @@ def test_defaults(schema: dict[str, Any]) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "organizations", [{}, {"organizations": []}, {"organizations": None}], ids=["absent", "empty", "null"]
+)
+def test_no_organizations(organizations: dict[str, Any], schema: dict[str, Any]) -> None:
+    assert loads_config(pretty({**organizations, "repositories": ["a/b"]}), schema=schema).organizations == ()
+
+
 def test_explicit_main_and_options(schema: dict[str, Any]) -> None:
     text = pretty(
         {

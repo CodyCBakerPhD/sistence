@@ -30,10 +30,9 @@ slots:
   organizations:
     description: >-
       GitHub organizations (or users) whose public repositories are all scanned. Forks and archived repositories are
-      left out unless `include_forks` or `include_archived` is set.
+      left out unless `include_forks` or `include_archived` is set. An empty list and no list both mean none.
     range: string
     multivalued: true
-    required: true
     pattern: "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$"
   repositories:
     description: >-

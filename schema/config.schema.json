@@ -27,12 +27,15 @@
                     ]
                 },
                 "organizations": {
-                    "description": "GitHub organizations (or users) whose public repositories are all scanned. Forks and archived repositories are left out unless `include_forks` or `include_archived` is set.",
+                    "description": "GitHub organizations (or users) whose public repositories are all scanned. Forks and archived repositories are left out unless `include_forks` or `include_archived` is set. An empty list and no list both mean none.",
                     "items": {
                         "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
                         "type": "string"
                     },
-                    "type": "array"
+                    "type": [
+                        "array",
+                        "null"
+                    ]
                 },
                 "repositories": {
                     "description": "Individual repositories to scan, each written as `owner/name` so that it is never ambiguous which one is meant. A repository listed here is scanned even when it is a fork or archived. Unless `main` says otherwise, the first entry is the one every other repository is compared against, so there has to be at least one.",
@@ -45,7 +48,6 @@
                 }
             },
             "required": [
-                "organizations",
                 "repositories"
             ],
             "title": "Config",
@@ -81,12 +83,15 @@
             ]
         },
         "organizations": {
-            "description": "GitHub organizations (or users) whose public repositories are all scanned. Forks and archived repositories are left out unless `include_forks` or `include_archived` is set.",
+            "description": "GitHub organizations (or users) whose public repositories are all scanned. Forks and archived repositories are left out unless `include_forks` or `include_archived` is set. An empty list and no list both mean none.",
             "items": {
                 "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
                 "type": "string"
             },
-            "type": "array"
+            "type": [
+                "array",
+                "null"
+            ]
         },
         "repositories": {
             "description": "Individual repositories to scan, each written as `owner/name` so that it is never ambiguous which one is meant. A repository listed here is scanned even when it is a fork or archived. Unless `main` says otherwise, the first entry is the one every other repository is compared against, so there has to be at least one.",
@@ -99,7 +104,6 @@
         }
     },
     "required": [
-        "organizations",
         "repositories"
     ],
     "title": "sistence-config",

@@ -13,6 +13,18 @@ pytestmark = pytest.mark.linkml
 
 linkml_generators = pytest.importorskip("linkml.generators.jsonschemagen")
 linkml_validator = pytest.importorskip("linkml.validator")
+linkml_cli = pytest.importorskip("linkml.validator.cli")
+click_testing = pytest.importorskip("click.testing")
+
+VALID = sorted((SCHEMA_DIR / "examples" / "valid").glob("*.json"))
+INVALID = sorted((SCHEMA_DIR / "examples" / "invalid").glob("*.json"))
+
+
+def run_cli(path: Path) -> int:
+    """``linkml-validate``, as the Validate config workflow runs it; its loader reads files differently from the API."""
+    args = ["--schema", str(SCHEMA_DIR / "config.yaml"), "--target-class", "Config", str(path)]
+    exit_code: int = click_testing.CliRunner().invoke(linkml_cli.cli, args).exit_code
+    return exit_code
 
 
 def test_json_schema_export_is_current() -> None:
@@ -24,13 +36,23 @@ def test_json_schema_export_is_current() -> None:
     )
 
 
-@pytest.mark.parametrize("path", sorted((SCHEMA_DIR / "examples" / "valid").glob("*.json")), ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", VALID, ids=lambda p: p.stem)
 def test_linkml_accepts_valid_examples(path: Path) -> None:
     report = linkml_validator.validate(json.loads(path.read_text()), str(SCHEMA_DIR / "config.yaml"), "Config")
     assert report.results == []
 
 
-@pytest.mark.parametrize("path", sorted((SCHEMA_DIR / "examples" / "invalid").glob("*.json")), ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", INVALID, ids=lambda p: p.stem)
 def test_linkml_rejects_invalid_examples(path: Path) -> None:
     report = linkml_validator.validate(json.loads(path.read_text()), str(SCHEMA_DIR / "config.yaml"), "Config")
     assert report.results != []
+
+
+@pytest.mark.parametrize("path", VALID, ids=lambda p: p.stem)
+def test_linkml_cli_accepts_valid_examples(path: Path) -> None:
+    assert run_cli(path) == 0
+
+
+@pytest.mark.parametrize("path", INVALID, ids=lambda p: p.stem)
+def test_linkml_cli_rejects_invalid_examples(path: Path) -> None:
+    assert run_cli(path) != 0

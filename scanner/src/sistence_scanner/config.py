@@ -95,7 +95,7 @@ def parse_config(data: dict[str, Any]) -> ScanConfig:
     """Apply the defaults to an already validated configuration."""
     repositories = tuple(data["repositories"])
     return ScanConfig(
-        organizations=tuple(data["organizations"]),
+        organizations=tuple(data.get("organizations") or ()),
         repositories=repositories,
         main=data.get("main") or repositories[0],
         include_forks=bool(data.get("include_forks") or False),

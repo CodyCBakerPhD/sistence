@@ -57,7 +57,7 @@ a redeploy.
 
 | Key                | Required | Meaning                                                                                                                                                                               |
 | ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `organizations`    | yes      | GitHub organizations (or users) whose public repositories are all scanned. May be empty.                                                                                              |
+| `organizations`    | no       | GitHub organizations (or users) whose public repositories are all scanned. Empty or absent means none.                                                                                |
 | `repositories`     | yes      | Individual repositories, each as `owner/name` so that it is never ambiguous which one is meant. At least one. A repository listed here is scanned even when it is a fork or archived. |
 | `main`             | no       | The repository (`owner/name`) every other one is compared against. Defaults to the first entry of `repositories`. It is scanned whether or not it is listed anywhere else.            |
 | `include_forks`    | no       | Also scan the forks an organization owns. Default `false`.                                                                                                                            |
